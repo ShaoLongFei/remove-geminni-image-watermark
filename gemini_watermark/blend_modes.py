@@ -1,12 +1,20 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
-from gemini_watermark.watermark_engine import WatermarkPosition
+
+if TYPE_CHECKING:
+    from gemini_watermark.watermark_engine import WatermarkPosition
 
 ALPHA_THRESHOLD = 0.002
 MAX_ALPHA = 0.99
 LOGO_VALUE = 255.0
 
 
-def unblend_region(rgba: np.ndarray, alpha_map: np.ndarray, position: WatermarkPosition) -> None:
+def unblend_region(
+    rgba: np.ndarray,
+    alpha_map: np.ndarray,
+    position: "WatermarkPosition",
+) -> None:
     x, y, width, height = position.x, position.y, position.width, position.height
     if width <= 0 or height <= 0:
         return
