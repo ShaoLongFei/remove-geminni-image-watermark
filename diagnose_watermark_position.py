@@ -8,25 +8,43 @@ from gemini_watermark.alpha_map import get_alpha_map_for_size
 INPUT_DIR = Path("/Users/shaolongfei/Downloads/横评PPT")
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"}
 
+ALPHA_THRESHOLD = 0.002
+MAX_ALPHA = 0.99
+LOGO_VALUE = 255.0
 
-def score_violation_rate(min_rgb: np.ndarray, alpha: np.ndarray, epsilon: float) -> float:
-    threshold = alpha * 255.0 - epsilon
-    violations = min_rgb < threshold
-    return float(np.sum(violations)) / float(violations.size)
+
+def score_clip_rate(rgb: np.ndarray, alpha: np.ndarray) -> float:
+    if rgb.ndim != 3 or rgb.shape[2] < 3:
+        raise ValueError("Expected rgb array with shape (H, W, 3)")
+    if alpha.shape != rgb.shape[:2]:
+        raise ValueError("Alpha map shape does not match rgb region size")
+
+    alpha = alpha.astype(np.float32)
+    mask = alpha >= ALPHA_THRESHOLD
+    if not np.any(mask):
+        return 1.0
+
+    alpha = np.minimum(alpha, MAX_ALPHA)
+    one_minus = 1.0 - alpha
+    original = (rgb.astype(np.float32) - alpha[..., None] * LOGO_VALUE) / one_minus[..., None]
+    clipped = (original < 0) | (original > 255)
+
+    clipped_channels = int(np.sum(clipped[mask]))
+    total_channels = int(np.sum(mask)) * 3
+    return float(clipped_channels) / float(total_channels)
 
 
 def find_best_position(
     *,
-    min_rgb: np.ndarray,
+    rgb: np.ndarray,
     alpha: np.ndarray,
     pred_x: int,
     pred_y: int,
     size: int,
     radius: int,
     coarse_step: int,
-    epsilon: float,
 ) -> tuple[int, int, float]:
-    height, width = min_rgb.shape
+    height, width = rgb.shape[0], rgb.shape[1]
     best_x, best_y, best_score = pred_x, pred_y, 1.0
 
     def clamp(val: int, lo: int, hi: int) -> int:
@@ -39,8 +57,8 @@ def find_best_position(
 
     for y in range(start_y, end_y + 1, coarse_step):
         for x in range(start_x, end_x + 1, coarse_step):
-            patch = min_rgb[y : y + size, x : x + size]
-            score = score_violation_rate(patch, alpha, epsilon)
+            patch = rgb[y : y + size, x : x + size, :3]
+            score = score_clip_rate(patch, alpha)
             if score < best_score:
                 best_x, best_y, best_score = x, y, score
 
@@ -58,8 +76,8 @@ def predicted_position(width: int, height: int, size: int) -> tuple[int, int]:
 def process_image(path: Path) -> None:
     img = Image.open(path).convert("RGBA")
     rgba = np.array(img, dtype=np.float32)
-    min_rgb = np.min(rgba[..., :3], axis=2)
-    height, width = min_rgb.shape
+    rgb = rgba[..., :3]
+    height, width = rgb.shape[0], rgb.shape[1]
 
     for size in (48, 96):
         if width < size or height < size:
@@ -69,24 +87,22 @@ def process_image(path: Path) -> None:
         alpha = get_alpha_map_for_size(size)
 
         coarse_x, coarse_y, _ = find_best_position(
-            min_rgb=min_rgb,
+            rgb=rgb,
             alpha=alpha,
             pred_x=pred_x,
             pred_y=pred_y,
             size=size,
             radius=128,
             coarse_step=4,
-            epsilon=1.0,
         )
         fine_x, fine_y, fine_score = find_best_position(
-            min_rgb=min_rgb,
+            rgb=rgb,
             alpha=alpha,
             pred_x=coarse_x,
             pred_y=coarse_y,
             size=size,
             radius=4,
             coarse_step=1,
-            epsilon=1.0,
         )
 
         dx = fine_x - pred_x
