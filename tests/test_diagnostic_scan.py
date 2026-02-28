@@ -1,5 +1,5 @@
 import numpy as np
-from diagnose_watermark_position import find_best_position
+from scripts.diagnostics.position_scan import find_best_position
 
 
 def test_find_best_position_prefers_low_clip_rate():

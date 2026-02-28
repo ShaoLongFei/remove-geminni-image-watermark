@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from demo_remove_watermark import process_directory
+from scripts.remove_watermark import process_directory
 
 
 def test_process_directory_top_level_only(tmp_path: Path) -> None:

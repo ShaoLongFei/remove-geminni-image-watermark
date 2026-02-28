@@ -1,5 +1,5 @@
 import numpy as np
-from diagnose_watermark_visualize import score_clip_rate
+from scripts.diagnostics.position_visualize import score_clip_rate
 
 
 def _apply_watermark(original: np.ndarray, alpha: np.ndarray) -> np.ndarray:

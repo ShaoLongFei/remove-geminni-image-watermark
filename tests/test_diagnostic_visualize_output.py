@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from diagnose_watermark_visualize import process_directory
+from scripts.diagnostics.position_visualize import process_directory
 
 
 def test_process_directory_writes_outputs(tmp_path: Path) -> None:
