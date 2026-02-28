@@ -22,7 +22,7 @@ class WatermarkPosition:
 
 
 def detect_watermark_config(image_width: int, image_height: int) -> WatermarkConfig:
-    if image_width > 1024 and image_height > 1024:
+    if image_width >= 160 and image_height >= 160:
         return WatermarkConfig(logo_size=96, margin_right=64, margin_bottom=64)
     return WatermarkConfig(logo_size=48, margin_right=32, margin_bottom=32)
 

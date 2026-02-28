@@ -11,8 +11,8 @@ def test_detect_config_large():
     assert cfg == WatermarkConfig(logo_size=96, margin_right=64, margin_bottom=64)
 
 
-def test_detect_config_small_when_one_side_1024():
-    cfg = detect_watermark_config(1024, 1025)
+def test_detect_config_small_when_one_side_below_min():
+    cfg = detect_watermark_config(159, 200)
     assert cfg == WatermarkConfig(logo_size=48, margin_right=32, margin_bottom=32)
 
 
